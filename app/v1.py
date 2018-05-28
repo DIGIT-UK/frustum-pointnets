@@ -93,12 +93,15 @@ class FPNetPredictor(object):
         return logits, centers, heading_logits, heading_residuals, size_scores, size_residuals
 
 
-def viz(pc):
+def viz(pc, centers):
     import mayavi.mlab as mlab
     fig = mlab.figure(figure=None, bgcolor=(0.4,0.4,0.4),
         fgcolor=None, engine=None, size=(500, 500))
-    mlab.points3d(pc[:,0], pc[:,1], pc[:,2], mode='point',
-        colormap='gnuplot', scale_factor=100, figure=fig)
+    mlab.points3d(pc[:,0], pc[:,1], pc[:,2], mode='sphere',
+        colormap='gnuplot', scale_factor=0.1, figure=fig)
+    mlab.points3d(centers[:,0], centers[:,1], centers[:,2], mode='sphere',
+        color=(1, 0, 1), scale_factor=0.3, figure=fig)
+    print 'White points are from PC | Red points is predicted centroids'
     raw_input("Press any key to continue")
 
 
@@ -127,9 +130,7 @@ def test():
     print 'Auxiliary data: '
     print '     Rot Angle: ', rot_angle
     print '     Prob List: ', prob_list
-    
-    # Visualization pointcloud
-    viz(pc)
+
 
     # Data to feed: 1024 points [[x y z int]...[]] and one hot vector [0. 0. 1.] 
     print '     len of point cloud', len(pc)
@@ -137,8 +138,10 @@ def test():
 
     # Demo how to use this predictor
     predictor = FPNetPredictor(model_fp=MODEL_PATH)
-    predictor.predict(pc=[pc], one_hot_vec=[one_hot_vec])
+    _, centers, _, _, _, _ = predictor.predict(pc=[pc], one_hot_vec=[one_hot_vec])
+ 
+    # Visualization pointcloud and centers
+    viz(pc, centers)
 
-    
 if __name__ == "__main__":
     test()
