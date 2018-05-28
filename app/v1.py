@@ -1,16 +1,13 @@
 import os
 import sys
-import argparse
 import importlib
 import numpy as np
 import tensorflow as tf
-import cPickle as pickle
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(BASE_DIR)
 sys.path.append(os.path.join(ROOT_DIR, 'models'))
 import provider
-import train_util
 
 MODEL_PATH = 'pretrained/log_v1/model.ckpt'
 DATA_PATH = 'kitti/frustum_carpedcyc_val_rgb_detection.pickle'
@@ -20,7 +17,7 @@ NUM_POINT = 1024
 NUM_CHANNEL = 4
 
 fp_nets = importlib.import_module('frustum_pointnets_v1')
-
+tf.logging.set_verbosity(tf.logging.INFO)
 
 class FPNetPredictor(object):
 
@@ -30,12 +27,15 @@ class FPNetPredictor(object):
     ops = None
 
     def __init__(self, model_fp):
+        tf.logging.info("Initializing FPNetPredictor Instance ...")
         self.model_fp = model_fp
         with tf.device('/gpu:0'):
             self._init_session()
             self._init_graph()
+        tf.logging.info("Initialized FPNetPredictor Instance!")
 
     def _init_session(self):
+        tf.logging.info("Initializing Session ...")
         with self.graph.as_default():
             config = tf.ConfigProto()
             config.gpu_options.allow_growth = True
@@ -43,6 +43,7 @@ class FPNetPredictor(object):
             self.sess = tf.Session(config=config)
 
     def _init_graph(self):
+        tf.logging.info("Initializing Graph ...")
         with self.graph.as_default():
             pointclouds_pl, one_hot_vec_pl, labels_pl, centers_pl, \
             heading_class_label_pl, heading_residual_label_pl, \
@@ -69,7 +70,7 @@ class FPNetPredictor(object):
                    'end_points': end_points}
 
     def predict(self, pc, one_hot_vec):
-
+        tf.logging.info("Predicting with pointcloud and one hot vector ...")
         _ops = self.ops
         _ep = _ops['end_points']
 
@@ -82,17 +83,14 @@ class FPNetPredictor(object):
                   _ep['size_scores'], _ep['size_residuals']],
                  feed_dict=feed_dict)
 
-        # heading_cls = np.argmax(heading_logits, 1) 
-        # size_cls = np.argmax(size_scores, 1) 
-        # heading_res = np.array([heading_residuals[i, heading_cls[i]] for i in range(pc.shape[0])])
-        # size_res = np.vstack([size_residuals[i, size_cls[i], :] for i in range(pc.shape[0])])
-
+        tf.logging.info("Prediction done ! \nResults:\nCenter: {}\nSize Score: {}".format(centers, size_scores))
         return logits, centers, heading_logits, heading_residuals, size_scores, size_residuals
 
 
 def test():
 
     # Load Frustum Datasets.
+    print 'Loading data .....'
     TEST_DATASET = provider.FrustumDataset(
         npoints=NUM_POINT,
         split='val',
@@ -100,45 +98,29 @@ def test():
         overwritten_data_path=DATA_PATH,
         from_rgb_detection=True,
         one_hot=True)
-
-    # Inherit test.py code and use 1 batch
-    num_batches = int((len(TEST_DATASET)+BATCH_SIZE-1)/BATCH_SIZE)
-    test_idxs = np.arange(0, len(TEST_DATASET))
-    batch_data_to_feed = np.zeros((BATCH_SIZE, NUM_POINT, NUM_CHANNEL))
-    batch_one_hot_to_feed = np.zeros((BATCH_SIZE, 3))
-
-    for batch_idx in range(num_batches):
-        print('batch idx: %d' % (batch_idx))
-        start_idx = batch_idx * BATCH_SIZE
-        end_idx = min(len(TEST_DATASET), (batch_idx+1) * BATCH_SIZE)
-        cur_batch_size = end_idx - start_idx
-
-        batch_data, batch_rot_angle, batch_rgb_prob, batch_one_hot_vec = \
-            train_util.get_batch(TEST_DATASET, test_idxs, start_idx, end_idx,
-                NUM_POINT, NUM_CHANNEL, from_rgb_detection=True)
-
-        # Show how the data look like
-        print('batch_data len: {}'.format(len(batch_data)))
-        print('batch_data[0]: {}'.format(batch_data[0]))
-        print('batch_data[0] type: {}'.format(type(batch_data[0])))
-        print('batch_data[0] len: {}'.format(len(batch_data[0])))
-        print('batch_data[0][0] len: {}'.format(len(batch_data[0][0])))
-        
-        print('batch_one_hot_vec len: {}'.format(len(batch_one_hot_vec)))
-        print('batch_one_hot_vec[0]: {}'.format(batch_one_hot_vec[0]))
-
-        batch_data_to_feed[0:cur_batch_size,...] = batch_data
-        batch_one_hot_to_feed[0:cur_batch_size,:] = batch_one_hot_vec
+    print 'Data loaded !'
+    # Select one of the datasets as test input to the NN
+    one_test_data = TEST_DATASET[0]
+    pc = one_test_data[0]
+    rot_angle = one_test_data[1]
+    prob_list = one_test_data[2]
+    one_hot_vec = one_test_data[-1]
+    print 'Test data: '
+    print '     Point Cloud Input: ', pc
+    print '     One Hot Vector Input: ', one_hot_vec
+    
+    print 'Auxiliary data: '
+    print '     Rot Angle: ', rot_angle
+    print '     Prob List: ', prob_list
 
     # Data to feed: 1024 points [[x y z int]...[]] and one hot vector [0. 0. 1.] 
-    pc = batch_data_to_feed
-    one_hot_vec = batch_one_hot_to_feed
-    print 'len of point cloud', len(pc)
-    print 'len of one_hot_vec', len(one_hot_vec)
+    print '     len of point cloud', len(pc)
+    print '     len of one_hot_vec', len(one_hot_vec)
 
     # Demo how to use this predictor
     predictor = FPNetPredictor(model_fp=MODEL_PATH)
-    print predictor.predict(pc=pc, one_hot_vec=one_hot_vec)
+    predictor.predict(pc=[pc], one_hot_vec=[one_hot_vec])
 
+    
 if __name__ == "__main__":
     test()
