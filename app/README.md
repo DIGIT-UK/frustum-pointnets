@@ -6,3 +6,20 @@ too much efforts on other platforms.
 
 Therefore, we directly utilize the pre-trained model to build an app that can process pointcloud/camera/camera_info
 predicting 3D objects.
+
+# How to run it
+
+- [X] Download pretrained model and put it under pretrained folder
+
+- [X] Prepare KITTI data and ensure `frustum_carpedcyc_val_rgb_detection.pickle` is under kitti folder
+
+- [X] Run `python app/v1.py`
+
+
+# TODO
+
+- [ ] Further clean up, removing loading data from pickle
+
+- [ ] Wrap up with ROS
+
+- [ ] Rewrite py_func part so that this graph can be frozen
