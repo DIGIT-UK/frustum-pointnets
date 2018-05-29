@@ -15,6 +15,7 @@ DATA_PATH = 'kitti/frustum_carpedcyc_val_rgb_detection.pickle'
 BATCH_SIZE = 1
 NUM_POINT = 1024
 NUM_CHANNEL = 4
+NUM_HEADING_BIN = 12
 
 fp_nets = importlib.import_module('frustum_pointnets_v1')
 tf.logging.set_verbosity(tf.logging.INFO)
@@ -93,7 +94,7 @@ class FPNetPredictor(object):
         return logits, centers, heading_logits, heading_residuals, size_scores, size_residuals
 
 
-def viz(pc, centers):
+def viz(pc, centers, corners_3d):
     import mayavi.mlab as mlab
     fig = mlab.figure(figure=None, bgcolor=(0.4,0.4,0.4),
         fgcolor=None, engine=None, size=(500, 500))
@@ -101,7 +102,13 @@ def viz(pc, centers):
         colormap='gnuplot', scale_factor=0.1, figure=fig)
     mlab.points3d(centers[:,0], centers[:,1], centers[:,2], mode='sphere',
         color=(1, 0, 1), scale_factor=0.3, figure=fig)
-    print 'White points are from PC | Red points is predicted centroids'
+    mlab.points3d(corners_3d[:,0], corners_3d[:,1], corners_3d[:,2], mode='sphere',
+        color=(1, 1, 0), scale_factor=0.3, figure=fig)
+    '''
+        White points are PC feed into the network
+        Red point is the predicted center
+        Yellow point the post-processed predicted bounding box corners
+    '''
     raw_input("Press any key to continue")
 
 
@@ -138,10 +145,23 @@ def test():
 
     # Demo how to use this predictor
     predictor = FPNetPredictor(model_fp=MODEL_PATH)
-    _, centers, _, _, _, _ = predictor.predict(pc=[pc], one_hot_vec=[one_hot_vec])
- 
+
+    logits, centers, \
+    heading_logits, heading_residuals, \
+    size_scores, size_residuals = predictor.predict(pc=[pc], one_hot_vec=[one_hot_vec])
+    
+    # Get 3D bounding box
+    heading_class = np.argmax(heading_logits, 1)
+    size_logits = size_scores
+    size_class = np.argmax(size_logits, 1) 
+    size_residual = np.vstack([size_residuals[0,size_class[0],:]])
+    heading_residual = np.array([heading_residuals[0,heading_class[0]]]) # B,
+    heading_angle = provider.class2angle(heading_class[0],heading_residual[0], NUM_HEADING_BIN)
+    box_size = provider.class2size(size_class[0], size_residual[0])
+    corners_3d = provider.get_3d_box(box_size, heading_angle, centers[0])
+
     # Visualization pointcloud and centers
-    viz(pc, centers)
+    viz(pc, centers, corners_3d)
 
 if __name__ == "__main__":
     test()

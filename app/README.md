@@ -15,6 +15,10 @@ predicting 3D objects.
 
 - [X] Run `python app/v1.py`
 
+Then you should be able to see:
+
+![predict](https://user-images.githubusercontent.com/8921629/40632268-d2f4bc5e-6299-11e8-8248-48d42748e6b9.png)
+
 
 # TODO
 
