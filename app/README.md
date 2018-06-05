@@ -22,8 +22,6 @@ Then you should be able to see:
 
 # TODO
 
-- [ ] Further clean up, removing loading data from pickle
-
-- [ ] Wrap up with ROS
+- [ ] Adding frustum proposal part
 
 - [ ] Rewrite py_func part so that this graph can be frozen
