@@ -51,7 +51,7 @@ class FrustumProposal(object):
 		''' Input and Output are nx3 points '''
 		return np.transpose(np.dot(self.R0, np.transpose(pts_3d_ref)))
 
-	def _project_rect_to_velo(self, pts_3d_rect):
+	def project_rect_to_velo(self, pts_3d_rect):
 		''' Input: nx3 points in rect camera coord.
 			Output: nx3 points in velodyne coord.
 		'''
@@ -95,6 +95,7 @@ class FrustumProposal(object):
 	def get_frustum_proposal(self, img_shape, boxes2d, pc_velo):
 
 		frustum_proposals = []
+		frustum_proposals_velo = []
 		img_width, img_height = img_shape
 		_num_objs = len(boxes2d)
 		_, pc_image_coord, img_fov_inds = self._get_lidar_in_image_fov(pc_velo[:, 0:3], 0, 0, img_width, img_height, True)
@@ -111,5 +112,12 @@ class FrustumProposal(object):
 			               (pc_image_coord[:, 1] >= ymin)
 			box_fov_inds = box_fov_inds & img_fov_inds
 			pc_in_box_fov = pc_rect[box_fov_inds, :]
+
+			# Below is equivalent to the commented one line code. I do this to verify the projection
+			pc_in_velo_fov = np.zeros_like(pc_in_box_fov)
+			pc_in_velo_fov[:, 0:3] = self.project_rect_to_velo(pc_in_box_fov[:, 0:3])
+			pc_in_velo_fov[:, 3] = pc_in_box_fov[:, 3]
+			#pc_in_velo_fov = pc_velo[box_fov_inds, :]
 			frustum_proposals.append(pc_in_box_fov)
-		return frustum_proposals
+			frustum_proposals_velo.append(pc_in_velo_fov)
+		return frustum_proposals, frustum_proposals_velo
