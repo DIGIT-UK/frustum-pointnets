@@ -12,13 +12,13 @@ NUM_POINT = 1024
 NUM_CHANNEL = 4
 NUM_HEADING_BIN = 12
 MODEL_PATH = 'pretrained/log_v1/model.ckpt'
-pc_vel = tools.load_velo_scan('dataset/KITTI/object/training/velodyne/000000.bin')
-calib_f = tools.read_calib_file('dataset/KITTI/object/training/calib/000000.txt')
+pc_vel = tools.load_velo_scan('dataset/KITTI/object/training/velodyne/000003.bin')
+calib_f = tools.read_calib_file('dataset/KITTI/object/training/calib/000003.txt')
 img_shape = (1224, 370)
 # You can find below hardcoded number in /KITTI/object/training/*/000000.*
-bbs = [(712.40, 143.00, 810.73, 307.92)]
+bbs = [(614.24, 181.78, 727.31, 284.77)]
 clbs = {
-	'id': '000000',
+	'id': '000003',
 	'P2': calib_f['P2'],
 	'Tr_velo_to_cam': calib_f['Tr_velo_to_cam'],
 	'R0_rect': calib_f['R0_rect']
@@ -30,7 +30,9 @@ fpnet = frustum_proposal.FrustumProposal(clbs)
 fp_pc, fp_pc_velo = fpnet.get_frustum_proposal(img_shape, bbs, pc_vel)
 fp_pc = fp_pc[0]
 fp_pc_velo = fp_pc_velo[0]
-one_hot_vec = (0, 1, 0)
+
+# Car Pedestrian Cyclist
+one_hot_vec = (1, 0, 0)
 
 
 # Downsample points into 1024
