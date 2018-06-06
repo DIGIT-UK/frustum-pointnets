@@ -13,7 +13,7 @@ predicting 3D objects.
 
 - [X] Prepare KITTI data and ensure `frustum_carpedcyc_val_rgb_detection.pickle` is under kitti folder
 
-- [X] Run `python app/v1.py`
+- [X] Run `python app/frustum_point_net.py`
 
 Then you should be able to see:
 
@@ -22,6 +22,6 @@ Then you should be able to see:
 
 # TODO
 
-- [ ] Adding frustum proposal part
+- [X] Adding frustum proposal part
 
 - [ ] Rewrite py_func part so that this graph can be frozen

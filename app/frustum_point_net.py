@@ -21,14 +21,12 @@ fp_nets = importlib.import_module('frustum_pointnets_v1')
 tf.logging.set_verbosity(tf.logging.INFO)
 
 
-
 class FPNetPredictor(object):
 
     graph = tf.Graph()
     sess = None
     saver = None
     ops = None
-
 
     def __init__(self, model_fp):
         tf.logging.info("Initializing FPNetPredictor Instance ...")
@@ -38,7 +36,6 @@ class FPNetPredictor(object):
             self._init_graph()
         tf.logging.info("Initialized FPNetPredictor Instance!")
 
-
     def _init_session(self):
         tf.logging.info("Initializing Session ...")
         with self.graph.as_default():
@@ -46,7 +43,6 @@ class FPNetPredictor(object):
             config.gpu_options.allow_growth = True
             config.allow_soft_placement = True
             self.sess = tf.Session(config=config)
-
 
     def _init_graph(self):
         tf.logging.info("Initializing Graph ...")
@@ -74,7 +70,6 @@ class FPNetPredictor(object):
                    'logits': end_points['mask_logits'],
                    'center': end_points['center'],
                    'end_points': end_points}
-
 
     def predict(self, pc, one_hot_vec):
         tf.logging.info("Predicting with pointcloud and one hot vector ...")
